@@ -1,0 +1,37 @@
+name: Nextflow lint
+
+on:
+  workflow_call:
+    inputs:
+      nextflow-version:
+        description: Nextflow version used for linting
+        type: string
+        default: "26.10.0"
+      paths:
+        description: Space-separated paths to lint, relative to the repository root
+        type: string
+        default: "."
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: ${{ inputs.nextflow-version }}
+
+      # nextflow lint exits non-zero on errors only; warnings are reported in the job summary
+      - name: Lint
+        env:
+          LINT_PATHS: ${{ inputs.paths }}
+        run: nextflow lint -o markdown $LINT_PATHS | tee -a "$GITHUB_STEP_SUMMARY"
